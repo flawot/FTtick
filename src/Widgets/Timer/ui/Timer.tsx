@@ -85,7 +85,10 @@ export const Timer = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-between">
+    <div
+      data-tauri-drag-region
+      className="w-full h-full flex flex-col items-center justify-between"
+    >
       <State
         pomodoro={pomodoro}
         currentTime={time}
