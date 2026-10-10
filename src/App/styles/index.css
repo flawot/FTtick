@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "./poppins.css";
+@import "./inter.css";
+
+@theme {
+  --color-background: #fcf4f4;
+  --color-surface: #ebe8e8;
+  --color-primary: #fd3535;
+  --color-foreground: #0a1c2f;
+  --color-secondary: #ed7575;
+
+  --font-display: 'Poppins', sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0b0101;
+    --color-surface: #3d3d3d;
+    --color-primary: #fd3535;
+    --color-foreground: #fff6f6;
+    --color-secondary: #ed7575;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  user-select: none;
+  width: 100%;
+  height: 100%;
+}
