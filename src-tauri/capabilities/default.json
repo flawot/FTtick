@@ -13,6 +13,7 @@
     "core:app:allow-default-window-icon",
     "core:app:allow-exit",
     "core:tray:allow-new",
-    "core:menu:allow-new"
+    "core:menu:allow-new",
+    "core:window:allow-start-dragging"
   ]
 }
