@@ -30,3 +30,9 @@ body {
   width: 100%;
   height: 100%;
 }
+
+@layer base {
+  button, a, input, select, textarea, [role="button"] {
+    -webkit-app-region: no-drag;
+  }
+}
