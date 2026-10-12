@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use tauri::Manager;
 
 mod audio;
 mod timer;
@@ -6,6 +7,11 @@ mod timer;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.set_resizable(false).unwrap();
+            Ok(())
+        })
         .manage(timer::TimerState { 
             is_running: Arc::new(Mutex::new(false)) 
         })

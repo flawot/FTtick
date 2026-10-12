@@ -12,14 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "ftick",
+        "title": "FTick",
         "width": 300,
         "height": 300,
         "minWidth": 300,
         "minHeight": 300,
         "maxWidth": 300,
         "maxHeight": 300,
-        "resizable": false,
+        "resizable": true,
         "decorations": false
       }
     ],
