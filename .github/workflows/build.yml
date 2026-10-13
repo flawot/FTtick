@@ -7,62 +7,22 @@ on:
       - release
 
 jobs:
-  publish-tauri:
+  build-desktop:
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: 'ubuntu-latest'
-            args: ''
-            tauri_script: ''
-          - platform: 'windows-latest'
-            args: ''
-            tauri_script: ''
-          - platform: 'ubuntu-latest'
-            args: ''
-            tauri_script: 'npm run tauri android build --'
-
+        platform: ['ubuntu-latest', 'windows-latest']
     runs-on: ${{ matrix.platform }}
-
     steps:
       - uses: actions/checkout@v7
 
-      - name: install dependencies (ubuntu desktop only)
-        if: matrix.platform == 'ubuntu-latest' && matrix.tauri_script == ''
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
-
-      - name: setup java (android only)
-        if: matrix.tauri_script != ''
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK (android only)
-        if: matrix.tauri_script != ''
-        uses: google-github-actions/setup-android@v2
-        with:
-          api-levels: 33
-          build-tools: 33.0.2
-          ndk: '21.4.7075529'
-
-      - name: Accept Android SDK licenses (android only)
-        if: matrix.tauri_script != ''
-        run: |
-          yes | sdkmanager --licenses
-
-      - name: Export Android env vars (android only)
-        if: matrix.tauri_script != ''
-        run: |
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: setup node
         uses: actions/setup-node@v6
@@ -72,8 +32,6 @@ jobs:
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.tauri_script != '' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -94,5 +52,52 @@ jobs:
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
-          tauriScript: ${{ matrix.tauri_script }}
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses
+
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android'
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: install dependencies and build frontend
+        run: |
+          npm install
+          npm run build --if-present
+
+      - name: Build Android App
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk-bundle
+        run: |
+          npx tauri android build --debug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-android-debug-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
