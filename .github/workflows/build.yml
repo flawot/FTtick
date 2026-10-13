@@ -23,7 +23,7 @@ jobs:
           - platform: 'windows-latest'
             args: ''
           - platform: 'ubuntu-latest'
-            args: '--target android'
+            args: 'android build'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - name: setup java (android only)
-        if: matrix.args == '--target android'
+        if: matrix.args == 'android build'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -54,7 +54,7 @@ jobs:
           targets: >-
             ${{ 
               matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' 
-              || matrix.args == '--target android' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' 
+              || matrix.args == 'android build' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' 
               || '' 
             }}
 
