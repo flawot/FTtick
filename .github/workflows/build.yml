@@ -18,13 +18,11 @@ jobs:
             args: '--target aarch64-apple-darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'ubuntu-22.04-arm'
+          - platform: 'ubuntu-latest'
             args: ''
           - platform: 'windows-latest'
             args: ''
-          - platform: 'ubuntu-22.04'
+          - platform: 'ubuntu-latest'
             args: '--target android'
 
     runs-on: ${{ matrix.platform }}
@@ -32,7 +30,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: install dependencies (ubuntu desktop only)
-        if: (matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm') && matrix.args == ''
+        if: matrix.platform == 'ubuntu-latest' && matrix.args == ''
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
@@ -43,12 +41,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: setup android sdk (android only)
-        if: matrix.args == '--target android'
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools build-tools/33.0.2 platforms/android-33 cmdline-tools/latest'
 
       - name: setup node
         uses: actions/setup-node@v6
@@ -71,8 +63,10 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: install frontend dependencies
-        run: npm install
+      - name: install dependencies and build frontend
+        run: |
+          npm install
+          npm run build --if-present
 
       - uses: tauri-apps/tauri-action@v1
         env:
