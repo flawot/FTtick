@@ -7,68 +7,44 @@ on:
       - release
 
 jobs:
-  build-desktop:
+  publish-tauri:
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        platform: ['ubuntu-latest', 'windows-latest']
+        include:
+          - platform: 'ubuntu-latest'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+          - platform: 'ubuntu-latest'
+            args: '--target android'
+
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-latest'
+      - name: install dependencies (ubuntu desktop only)
+        if: matrix.platform == 'ubuntu-latest' && matrix.args == ''
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
-      - name: setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: 'npm'
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-
-      - name: install dependencies and build frontend
-        run: |
-          npm install
-          npm run build --if-present
-
-      - uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: app-v__VERSION__
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: setup java
+      - name: setup java (android only)
+        if: matrix.args == '--target android'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Accept Android SDK licenses
+      - name: Accept Android SDK licenses (android only)
+        if: matrix.args == '--target android'
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      - name: Export Android env vars
+      - name: Export Android env vars (android only)
+        if: matrix.args == '--target android'
         run: |
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
@@ -84,7 +60,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android'
+          targets: ${{ matrix.args == '--target android' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -96,12 +72,23 @@ jobs:
           npm install
           npm run build --if-present
 
-      - name: Build Android App
+      - name: build android native (android only)
+        if: matrix.args == '--target android'
         run: |
           npx tauri android build --debug
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: move apk to tauri release folder (android only)
+        if: matrix.args == '--target android'
+        run: |
+          mkdir -p src-tauri/target/release/bundle/apk/
+          cp src-tauri/gen/android/app/build/outputs/apk/debug/*.apk src-tauri/target/release/bundle/apk/
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: tauri-android-debug-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+          tagName: app-v__VERSION__
+          releaseName: 'App v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
