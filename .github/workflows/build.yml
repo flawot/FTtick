@@ -41,6 +41,9 @@ jobs:
       - name: setup android sdk (android only)
         if: matrix.args == '--target aarch64-linux-android'
         uses: android-actions/setup-android@v3
+        with:
+          api-level: 33
+          components: platform-tools,build-tools;33.0.2,cmdline-tools;latest
       
       - name: Ensure Android cmdline-tools & platform-tools are installed (android only)
         if: matrix.args == '--target aarch64-linux-android'
