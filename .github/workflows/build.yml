@@ -14,9 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'windows-latest'
-            args: ''
           - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'ubuntu-22.04-arm'
+            args: ''
+          - platform: 'windows-latest'
             args: ''
           - platform: 'ubuntu-22.04'
             args: '--target android'
@@ -26,10 +28,10 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: install dependencies (ubuntu desktop only)
-        if: matrix.platform == 'ubuntu-22.04' && matrix.args == ''
+        if: (matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm') && matrix.args == ''
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev patchelf xdg-utils
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - name: setup java (android only)
         if: matrix.args == '--target android'
