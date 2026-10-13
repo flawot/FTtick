@@ -25,6 +25,7 @@ jobs:
             tauri_script: 'npm run tauri android build --'
 
     runs-on: ${{ matrix.platform }}
+
     steps:
       - uses: actions/checkout@v7
 
@@ -41,6 +42,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android SDK (android only)
+        if: matrix.tauri_script != ''
+        uses: google-github-actions/setup-android@v2
+        with:
+          api-levels: 33
+          build-tools: 33.0.2
+          ndk: '21.4.7075529'
+
       - name: Accept Android SDK licenses (android only)
         if: matrix.tauri_script != ''
         run: |
@@ -50,8 +59,10 @@ jobs:
         if: matrix.tauri_script != ''
         run: |
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: setup node
         uses: actions/setup-node@v6
