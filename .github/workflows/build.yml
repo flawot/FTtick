@@ -14,6 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'ubuntu-22.04-arm'
@@ -44,8 +48,7 @@ jobs:
         if: matrix.args == '--target android'
         uses: android-actions/setup-android@v3
         with:
-          api-level: 33
-          components: platform-tools,build-tools;33.0.2,cmdline-tools;latest
+          packages: 'platform-tools build-tools/33.0.2 platforms/android-33 cmdline-tools/latest'
 
       - name: setup node
         uses: actions/setup-node@v6
@@ -56,7 +59,12 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.args == '--target android' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' || '' }}
+          targets: >-
+            ${{ 
+              matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' 
+              || matrix.args == '--target android' && 'aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' 
+              || '' 
+            }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
