@@ -1,7 +1,35 @@
-# Tauri + React + Typescript
+# FTick
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+## Описание
+FTick - приложение для контроля времени и улучшения дисциплины. В основе он использует технику "Pomodoro", для контроля времени. Этот проект полезен для людей с прокрастинацией и проблемой с контролем времени 
 
-## Recommended IDE Setup
+## Как работать с приложение:
+ 1. Установка и запуск приложения
+ 2. Определение цели на сессию
+ 3. Запуск таймера
+ 4. Таймер начинается сразу с фокуса и длиться 25 минут
+ 5. После 25 минут работы, воспроизведётся звук и начнётся короткий отдых
+ 6. После конца отдыха начнётся новый цикл
+ 7. После 4 циклов или 4 "Помидоров" начнётся длинный отдых
+ 8. После конца сессии вы можете подвести итоги работы сессии длиной в 2 часа
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Зависимости:
+ - ``Rust``
+ - ``Node.js``
+ - ``npm``
+ - ``Tauri V2``
+
+## Сборка и запуск:
+Linux/MacOS
+```bash
+npm i
+npm run tauri build
+./src-tauri/target/release/ftick
+```
+
+Windows (PowerShell)
+```bash
+npm install
+npm run tauri build
+.\src-tauri\target\release\ftick.exe
+```
