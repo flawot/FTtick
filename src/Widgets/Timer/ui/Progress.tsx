@@ -24,7 +24,6 @@ export const Progress = ({ percentage = 75, size = 120, strokeWidth = 10, mode }
           className="stroke-surface"
         />
 
-        {/* key={mode} заставляет круг мгновенно пересоздаться при смене режима (сбросе) */}
         <circle
           key={mode}
           cx={size / 2}
