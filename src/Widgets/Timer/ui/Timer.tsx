@@ -4,6 +4,8 @@ import { State } from "./State";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Mode } from "../model";
+import { IconButton } from "../../../Shared/ui/IconButton";
+import { faRefresh } from "@fortawesome/free-solid-svg-icons";
 
 export const Timer = () => {
   const [time, setTime] = useState<number>(focus);
@@ -11,6 +13,7 @@ export const Timer = () => {
   const [pomodoro, setPomodoro] = useState<number>(0);
   const [mode, setMode] = useState<Mode>("focus");
   const [maxTime, setMaxTime] = useState<number>(focus);
+  const [key, setKey] = useState<number>(0);
 
   const modeRef = useRef(mode);
   useEffect(() => {
@@ -84,12 +87,23 @@ export const Timer = () => {
     ).catch(console.error);
   };
 
+  const resetTimer = () => {
+    invoke("stop_pomodoro").catch(console.error);
+    setPomodoro(0);
+    setMode("focus");
+    setMaxTime(focus);
+    setTime(focus);
+    setActive(false);
+    setKey((prev) => prev + 1);
+  };
+
   return (
     <div
       data-tauri-drag-region
-      className="w-full h-full flex flex-col items-center justify-between"
+      className="w-full h-full relative flex flex-col items-center justify-between"
     >
       <State
+        key={key}
         pomodoro={pomodoro}
         currentTime={time}
         maxTime={maxTime}
@@ -102,6 +116,10 @@ export const Timer = () => {
       >
         {active ? "Пауза" : "Старт"}
       </button>
+
+      <span className="absolute left-4 bottom-4">
+        <IconButton icon={faRefresh} onClick={() => resetTimer()} />
+      </span>
     </div>
   );
 };
