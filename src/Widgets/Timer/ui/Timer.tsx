@@ -5,7 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Mode } from "../model";
 import { IconButton } from "../../../Shared/ui/IconButton";
-import { faRefresh } from "@fortawesome/free-solid-svg-icons";
+import { faGear, faRefresh } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router";
 
 export const Timer = () => {
   const [time, setTime] = useState<number>(focus);
@@ -97,6 +98,8 @@ export const Timer = () => {
     setKey((prev) => prev + 1);
   };
 
+  const navigate = useNavigate();
+
   return (
     <div
       data-tauri-drag-region
@@ -117,8 +120,17 @@ export const Timer = () => {
         {active ? "Пауза" : "Старт"}
       </button>
 
-      <span className="absolute left-4 bottom-4">
+      <span className="absolute left-0 bottom-0">
         <IconButton icon={faRefresh} onClick={() => resetTimer()} />
+      </span>
+
+      <span className="absolute right-0 bottom-0">
+        <IconButton
+          icon={faGear}
+          onClick={() => {
+            navigate("/settings");
+          }}
+        />
       </span>
     </div>
   );

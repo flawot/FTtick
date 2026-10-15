@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router";
 import { HomePage } from "../Pages/Home";
+import { SettingsPage } from "../Pages/Settings";
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
       >
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </div>
     </div>
