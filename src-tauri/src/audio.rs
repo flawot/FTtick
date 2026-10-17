@@ -1,5 +1,5 @@
-use std::io::Cursor;
 use rodio::{Decoder, DeviceSinkBuilder, Player};
+use std::io::Cursor;
 
 pub fn play_alarm() {
     std::thread::spawn(move || {

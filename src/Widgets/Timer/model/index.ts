@@ -5,3 +5,12 @@ export const ModeRussian: Record<Mode, string> = {
   short: "Перерыв",
   long: "Большой перерыв",
 };
+
+export interface BackendState {
+  time: number;
+  maxTime: number;
+  mode: Mode;
+  pomodoro: number;
+  isRunning: boolean;
+  longBreakAfter: number;
+}

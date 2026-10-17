@@ -1,104 +1,64 @@
-import { useEffect, useState, useRef } from "react";
-import { focus, shortBreak, longBreak, longBreakAfter } from "../config";
-import { State } from "./State";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Mode } from "../model";
+import { useNavigate } from "react-router";
+import { State } from "./State";
 import { IconButton } from "../../../Shared/ui/IconButton";
 import { faGear, faRefresh } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router";
+import { BackendState } from "../model";
 
 export const Timer = () => {
-  const [time, setTime] = useState<number>(focus);
-  const [active, setActive] = useState<boolean>(false);
-  const [pomodoro, setPomodoro] = useState<number>(0);
-  const [mode, setMode] = useState<Mode>("focus");
-  const [maxTime, setMaxTime] = useState<number>(focus);
+  const [state, setState] = useState<BackendState | null>(null);
   const [key, setKey] = useState<number>(0);
 
-  const modeRef = useRef(mode);
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
+  const navigate = useNavigate();
 
-  const startTimer = (seconds: number, newMode: Mode) => {
-    setTime(seconds);
-    setMaxTime(seconds);
-    setMode(newMode);
-    setActive(true);
-    invoke("start_pomodoro", { seconds }).catch(console.error);
-  };
+  useLayoutEffect(() => {
+    invoke<BackendState>("get_timer_state").then(setState).catch(console.error);
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
     let unlistenTick: (() => void) | undefined;
-    let unlistenFinished: (() => void) | undefined;
+    let unlistenState: (() => void) | undefined;
 
-    listen<number>(
-      "timer-tick",
-      (e) => !isCancelled && setTime(e.payload),
-    ).then((fn) => {
-      if (isCancelled) fn();
-      else unlistenTick = fn;
-    });
-
-    listen("timer-finished", () => {
-      if (isCancelled) return;
-
-      if (modeRef.current === "focus") {
-        setPomodoro((prev) => {
-          const next = prev + 1;
-          if (next >= longBreakAfter) {
-            startTimer(longBreak, "long");
-          } else {
-            startTimer(shortBreak, "short");
-          }
-          return next;
-        });
-      } else {
-        if (modeRef.current === "long") {
-          setPomodoro(0);
-          setTime(focus);
-          setMaxTime(focus);
-          setMode("focus");
-          setActive(false);
-          invoke("stop_pomodoro").catch(console.error);
-        } else {
-          startTimer(focus, "focus");
-        }
+    listen<number>("timer-tick", (e) => {
+      if (!isCancelled) {
+        setState((prev) => (prev ? { ...prev, time: e.payload } : null));
       }
-    }).then((fn) => {
-      if (isCancelled) fn();
-      else unlistenFinished = fn;
-    });
+    }).then((fn) => (unlistenTick = fn));
+
+    listen<BackendState>("timer-state-changed", (e) => {
+      if (!isCancelled) {
+        setState(e.payload);
+      }
+    }).then((fn) => (unlistenState = fn));
 
     return () => {
       isCancelled = true;
       unlistenTick?.();
-      unlistenFinished?.();
+      unlistenState?.();
     };
   }, []);
 
+  if (!state) {
+    return <div className="w-full h-full bg-background" />;
+  }
+
   const toggleState = () => {
-    const nextActive = !active;
-    setActive(nextActive);
-    invoke(
-      nextActive ? "start_pomodoro" : "stop_pomodoro",
-      nextActive ? { seconds: time } : undefined,
-    ).catch(console.error);
+    if (state.isRunning) {
+      invoke("stop_pomodoro").catch(console.error);
+    } else {
+      invoke("start_pomodoro", { seconds: state.time }).catch(console.error);
+    }
   };
 
   const resetTimer = () => {
-    invoke("stop_pomodoro").catch(console.error);
-    setPomodoro(0);
-    setMode("focus");
-    setMaxTime(focus);
-    setTime(focus);
-    setActive(false);
-    setKey((prev) => prev + 1);
+    setKey((prev) => {
+      return prev + 1;
+    });
+    invoke("reset_pomodoro").catch(console.error);
   };
-
-  const navigate = useNavigate();
 
   return (
     <div
@@ -107,30 +67,26 @@ export const Timer = () => {
     >
       <State
         key={key}
-        pomodoro={pomodoro}
-        currentTime={time}
-        maxTime={maxTime}
-        mode={mode}
+        pomodoro={state.pomodoro}
+        currentTime={state.time}
+        maxTime={state.maxTime}
+        mode={state.mode}
+        longBreakAfter={state.longBreakAfter}
       />
 
       <button
         className="bg-surface min-[320px]:text-lg duration-100 hover:scale-110 active:scale-100 text-foreground font-display px-6 py-2 rounded-full"
         onClick={toggleState}
       >
-        {active ? "Пауза" : "Старт"}
+        {state.isRunning ? "Пауза" : "Старт"}
       </button>
 
       <span className="absolute left-0 bottom-0">
-        <IconButton icon={faRefresh} onClick={() => resetTimer()} />
+        <IconButton icon={faRefresh} onClick={resetTimer} />
       </span>
 
       <span className="absolute right-0 bottom-0">
-        <IconButton
-          icon={faGear}
-          onClick={() => {
-            navigate("/settings");
-          }}
-        />
+        <IconButton icon={faGear} onClick={() => navigate("/settings")} />
       </span>
     </div>
   );

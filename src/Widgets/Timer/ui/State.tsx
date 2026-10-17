@@ -3,16 +3,16 @@ import { Mode, ModeRussian } from "../model";
 import { faCoffee, faEye } from "@fortawesome/free-solid-svg-icons";
 import { format } from "../lib/format";
 import { Progress } from "./Progress";
-import { longBreakAfter } from "../config";
 
 interface IProps {
   maxTime: number;
   currentTime: number;
   mode: Mode;
   pomodoro: number;
+  longBreakAfter: number;
 }
 
-export const State = ({ currentTime, maxTime, mode, pomodoro }: IProps) => {
+export const State = ({ currentTime, maxTime, mode, pomodoro, longBreakAfter }: IProps) => {
   const pomodoros = [...Array(longBreakAfter).keys()];
 
   return (
