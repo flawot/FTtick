@@ -1,4 +1,4 @@
-import { Mode } from "../model";
+import { Mode } from "../../../Shared/model/types";
 
 interface IProps {
   percentage?: number;
