@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { State } from "./State";
 import { IconButton } from "../../../Shared/ui/IconButton";
 import { faGear, faRefresh } from "@fortawesome/free-solid-svg-icons";
-import { BackendState } from "../model";
+import { BackendState } from "../../../Shared/model/types";
 
 export const Timer = () => {
   const [state, setState] = useState<BackendState | null>(null);
@@ -53,11 +53,14 @@ export const Timer = () => {
     }
   };
 
-  const resetTimer = () => {
-    setKey((prev) => {
-      return prev + 1;
-    });
-    invoke("reset_pomodoro").catch(console.error);
+  const resetTimer = async () => {
+    try {
+      const resetState = await invoke<BackendState>("reset_pomodoro");
+      setState(resetState);
+      setKey((prev) => prev + 1);
+    } catch (error) {
+      console.error("Ошибка при сбросе таймера:", error);
+    }
   };
 
   return (

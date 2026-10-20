@@ -1,8 +1,9 @@
 use crate::audio;
+use crate::settings;
 use serde::Serialize;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 
 #[derive(Serialize, Clone, Copy, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -24,26 +25,19 @@ pub struct TimerData {
 }
 
 pub struct TimerState {
-    pub data: Arc<Mutex<TimerData>>,
+    pub data: Mutex<TimerData>,
 }
-
-const LONG_BREAK_AFTER: u32 = 4;
-const FOCUS_TIME: u64 = 25 * 60;
-const SHORT_BREAK: u64 = 5 * 60;
-const LONG_BREAK: u64 = 30 * 60;
 
 #[tauri::command]
 pub fn get_timer_state(state: State<'_, TimerState>) -> TimerData {
-    let data = state.data.lock().unwrap();
+    let data = state.data.lock().unwrap_or_else(|e| e.into_inner());
     data.clone()
 }
 
 #[tauri::command]
 pub fn start_pomodoro(seconds: u64, app_handle: tauri::AppHandle, state: State<'_, TimerState>) {
-    let data_clone = state.data.clone();
-
     {
-        let mut data = data_clone.lock().unwrap();
+        let mut data = state.data.lock().unwrap_or_else(|e| e.into_inner());
         if data.is_running {
             return;
         }
@@ -55,51 +49,65 @@ pub fn start_pomodoro(seconds: u64, app_handle: tauri::AppHandle, state: State<'
     }
 
     std::thread::spawn(move || {
-        loop {
-            let current_time = {
-                let data = data_clone.lock().unwrap();
-                data.time
-            };
+        let state_ref = match app_handle.try_state::<TimerState>() {
+            Some(s) => s,
+            None => return,
+        };
 
-            if current_time == 0 {
-                break;
+        loop {
+            {
+                let data = state_ref.data.lock().unwrap_or_else(|e| e.into_inner());
+                if !data.is_running {
+                    return;
+                }
             }
 
             let start_time = Instant::now();
 
-            let new_time = {
-                let mut data = data_clone.lock().unwrap();
+            let current_time = {
+                let mut data = state_ref.data.lock().unwrap_or_else(|e| e.into_inner());
                 if data.time > 0 {
                     data.time -= 1;
                 }
                 data.time
             };
 
-            let _ = app_handle.emit("timer-tick", new_time);
+            let _ = app_handle.emit("timer-tick", current_time);
+
+            if current_time == 0 {
+                break;
+            }
 
             while start_time.elapsed() < Duration::from_secs(1) {
-                if !data_clone.lock().unwrap().is_running {
+                let is_running = {
+                    let data = state_ref.data.lock().unwrap_or_else(|e| e.into_inner());
+                    data.is_running
+                };
+
+                if !is_running {
                     return;
                 }
                 std::thread::sleep(Duration::from_millis(20));
             }
         }
 
-        let mut data = data_clone.lock().unwrap();
+        let mut data = state_ref.data.lock().unwrap_or_else(|e| e.into_inner());
         if data.is_running {
             audio::play_alarm();
+
+            let config = settings::load_timer_config(&app_handle);
 
             match data.mode {
                 Mode::Focus => {
                     data.pomodoro += 1;
-                    if data.pomodoro >= LONG_BREAK_AFTER {
+                    if data.pomodoro >= config.long_break_after as u32 {
                         data.mode = Mode::Long;
-                        data.time = LONG_BREAK;
-                        data.max_time = LONG_BREAK;
+                        data.time = config.long_break;
+                        data.max_time = config.long_break;
                     } else {
                         data.mode = Mode::Short;
-                        data.time = SHORT_BREAK;
-                        data.max_time = SHORT_BREAK;
+                        data.time = config.short_break;
+                        data.max_time = config.short_break;
                     }
                 }
                 Mode::Short | Mode::Long => {
@@ -107,11 +115,12 @@ pub fn start_pomodoro(seconds: u64, app_handle: tauri::AppHandle, state: State<'
                         data.pomodoro = 0;
                     }
                     data.mode = Mode::Focus;
-                    data.time = FOCUS_TIME;
-                    data.max_time = FOCUS_TIME;
+                    data.time = config.focus;
+                    data.max_time = config.focus;
                 }
             }
 
+            data.long_break_after = config.long_break_after;
             data.is_running = false;
 
             let _ = app_handle.emit("timer-state-changed", data.clone());
@@ -121,20 +130,50 @@ pub fn start_pomodoro(seconds: u64, app_handle: tauri::AppHandle, state: State<'
 
 #[tauri::command]
 pub fn stop_pomodoro(app_handle: tauri::AppHandle, state: State<'_, TimerState>) {
-    let mut data = state.data.lock().unwrap();
+    let mut data = state.data.lock().unwrap_or_else(|e| e.into_inner());
     data.is_running = false;
     let _ = app_handle.emit("timer-state-changed", data.clone());
 }
 
 #[tauri::command]
 pub fn reset_pomodoro(app_handle: tauri::AppHandle, state: State<'_, TimerState>) -> TimerData {
-    let mut data = state.data.lock().unwrap();
+    let config = settings::load_timer_config(&app_handle);
+
+    let mut data = state.data.lock().unwrap_or_else(|e| e.into_inner());
     data.is_running = false;
     data.pomodoro = 0;
     data.mode = Mode::Focus;
-    data.time = FOCUS_TIME;
-    data.max_time = FOCUS_TIME;
-    data.long_break_after = LONG_BREAK_AFTER as u8;
+    data.time = config.focus;
+    data.max_time = config.focus;
+    data.long_break_after = config.long_break_after;
+
+    let _ = app_handle.emit("timer-state-changed", data.clone());
+    data.clone()
+}
+
+#[tauri::command]
+pub fn apply_settings(app_handle: tauri::AppHandle, state: State<'_, TimerState>) -> TimerData {
+    let config = settings::load_timer_config(&app_handle);
+    let mut data = state.data.lock().unwrap_or_else(|e| e.into_inner());
+
+    data.long_break_after = config.long_break_after;
+
+    if !data.is_running {
+        match data.mode {
+            Mode::Focus => {
+                data.time = config.focus;
+                data.max_time = config.focus;
+            }
+            Mode::Short => {
+                data.time = config.short_break;
+                data.max_time = config.short_break;
+            }
+            Mode::Long => {
+                data.time = config.long_break;
+                data.max_time = config.long_break;
+            }
+        }
+    }
 
     let _ = app_handle.emit("timer-state-changed", data.clone());
     data.clone()

@@ -1,8 +1,8 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Mode, ModeRussian } from "../model";
 import { faCoffee, faEye } from "@fortawesome/free-solid-svg-icons";
 import { format } from "../lib/format";
 import { Progress } from "./Progress";
+import { Mode, ModeRussian } from "../../../Shared/model/types";
 
 interface IProps {
   maxTime: number;

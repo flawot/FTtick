@@ -14,3 +14,10 @@ export interface BackendState {
   isRunning: boolean;
   longBreakAfter: number;
 }
+
+export interface SettingsState {
+  focus: number;
+  shortBreak: number;
+  longBreak: number;
+  longBreakAfter: number;
+}

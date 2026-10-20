@@ -4,7 +4,7 @@ import { SettingsPage } from "../Pages/Settings";
 
 export default function App() {
   return (
-    <div className="flex h-screen w-screen items-center justify-center select-none">
+    <div className="flex font-display h-screen w-screen items-center justify-center select-none">
       <div
         data-tauri-drag-region
         className="aspect-square h-[100vmin] w-[100vmin] max-h-full max-w-full p-4"
