@@ -37,8 +37,10 @@ export const SettingPopup = ({
         <button
           className="w-9 flex justify-center items-center text-lg text-foreground/50 transition-all duration-100 hover:scale-105 active:scale-95 rounded-xl cursor-pointer aspect-square border border-foreground"
           onClick={() => {
-            setData((prev) => prev - 1);
-            change(setting, "dec");
+            if (data - 1 > 0) {
+              setData((prev) => prev - 1);
+              change(setting, "dec");
+            }
           }}
         >
           <FontAwesomeIcon icon={faMinus} />
@@ -53,8 +55,13 @@ export const SettingPopup = ({
         <button
           className="w-9 flex justify-center items-center text-lg text-foreground/50 transition-all duration-100 hover:scale-105 active:scale-95 rounded-xl cursor-pointer aspect-square border border-foreground"
           onClick={() => {
-            setData((prev) => prev + 1);
-            change(setting, "inc");
+            if (setting === "after" && data + 1 <= 10) {
+              setData((prev) => prev + 1);
+              change(setting, "inc");
+            } else if (setting !== "after" && data + 1 <= 60) {
+              setData((prev) => prev + 1);
+              change(setting, "inc");
+            }
           }}
         >
           <FontAwesomeIcon icon={faPlus} />

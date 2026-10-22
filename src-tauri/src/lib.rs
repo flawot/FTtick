@@ -27,12 +27,12 @@ pub fn run() {
         })
         .manage(timer::TimerState {
             data: Mutex::new(timer::TimerData {
-                time: 25 * 60,
-                max_time: 25 * 60,
+                time: settings::DEFAULT_FOCUS,
+                max_time: settings::DEFAULT_FOCUS,
                 mode: timer::Mode::Focus,
                 pomodoro: 0,
                 is_running: false,
-                long_break_after: 4,
+                long_break_after: settings::DEFAULT_LONG_BREAK_AFTER,
             }),
         })
         .plugin(tauri_plugin_os::init())
